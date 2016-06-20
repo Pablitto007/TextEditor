@@ -236,8 +236,6 @@ public class rootLayoutController {
 			if (newValue.equals(oldOne)) {
 				isChanged = false;
 			}
-//			System.out.println("oldVal: " + oldValue + " ,new: " + newValue
-//					+ "\t" + isChanged);
 		});
 		area.textProperty().addListener(listener);
 	}
