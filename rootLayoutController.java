@@ -1,0 +1,244 @@
+package app.view;
+
+import java.io.File;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javafx.beans.value.ChangeListener;
+import javafx.fxml.FXML;
+import javafx.scene.control.TextArea;
+import javafx.stage.FileChooser;
+import app.Main;
+
+public class rootLayoutController {
+
+	private Main mainApp;
+	private String content;
+	private String regex;
+	private boolean isChanged;
+	private ChangeListener<String> listener;
+
+	@FXML
+	TextArea area;
+
+	public rootLayoutController() {
+	}
+
+	public void initialize() {
+		area.setStyle("-fx-focus-color: transparent; -fx-text-box-border: transparent; -fx-font-family: Arial");
+		setListener();
+	}
+
+	@FXML
+	public void handleNew() {
+		if (isChanged == true) {
+			boolean saveOrNot = mainApp.showChangesConfirmation();
+			if (saveOrNot == true) {
+				File file = mainApp.getFilePath();
+				if (file != null) {
+					String content = area.getText();
+					mainApp.saveToFile(content, file);
+				} else {
+					mainApp.showSaveChooser();
+				}
+			}
+		}
+		area.textProperty().removeListener(listener);
+		mainApp.setFilePath(null);
+		area.setText("");
+		setListener();
+	}
+
+	@FXML
+	public void handleOpen() {
+		if (isChanged == true) {
+			boolean saveOrNot = mainApp.showChangesConfirmation();
+			if (saveOrNot == true) {
+				mainApp.showSaveChooser();
+			}
+			mainApp.setFilePath(null);
+			area.setText("");
+		}
+
+		FileChooser chooser = new FileChooser();
+		FileChooser.ExtensionFilter filter = new FileChooser.ExtensionFilter(
+				"Txt files ", "*.txt");
+		chooser.getExtensionFilters().add(filter);
+		chooser.setInitialDirectory(new File(mainApp.getDirectory()));
+		File file = chooser.showOpenDialog(mainApp.getPrimaryStage());
+		area.textProperty().removeListener(listener);
+		if (file != null) {
+			String content = mainApp.readFromFile(file);
+			area.setText(content);
+			isChanged = false;
+		}
+		isChanged = false;
+		setListener();
+	}
+
+	@FXML
+	public void handleSave() {
+		File file = mainApp.getFilePath();
+		if (file != null) {
+			area.textProperty().removeListener(listener);
+			String content = area.getText();
+			mainApp.saveToFile(content, file);
+			setListener();
+		} else {
+			handleSaveAs();
+		}
+	}
+
+	@FXML
+	public void handleSaveAs() {
+		area.textProperty().removeListener(listener);
+		mainApp.showSaveChooser();
+		setListener();
+	}
+
+	@FXML
+	public void handleExit() {
+		if (isChanged == true) {
+			boolean saveOrNot = mainApp.showChangesConfirmation();
+			if (saveOrNot == true) {
+				mainApp.showSaveChooser();
+			}
+		}
+		mainApp.getPrimaryStage().close();
+	}
+
+	@FXML
+	public void handleFormatEmptyLines() {
+		SetRegex("\\s+");
+		formatMenuPattern();
+	}
+
+	@FXML
+	public void handleFormatPunctationMarks() {
+		SetRegex("[\\p{Punct}]+");
+		formatMenuPattern();
+	}
+
+	@FXML
+	public void handleFormatDigits() {
+		SetRegex("\\d+");
+		formatMenuPattern();
+	}
+
+	@FXML
+	public void handleLeaveTextOnly() {
+		SetRegex("[\\s\\d\\p{Punct}]+");
+		Matcher matcher;
+		content = area.getText();
+		Scanner scanner = new Scanner(content);
+		StringBuilder builder = new StringBuilder();
+		Pattern pattern = Pattern.compile(regex);
+		int counter = 0;
+		String newLine = "";
+		while (scanner.hasNextLine()) {
+			String line = scanner.nextLine();
+			matcher = pattern.matcher(line);
+			boolean isMatching = matcher.matches();
+			if (line.equalsIgnoreCase("") || isMatching == true)
+				continue;
+			else {
+				if (!line.matches("^[a-zA-Z].*")) {
+					char[] array = line.toCharArray();
+					for (int i = 0; i < array.length; i++) {
+						if ((array[i] >= 65 && array[i] <= 90)
+								|| (array[i] >= 97 && array[i] <= 122)) {
+							counter = i;
+							break;
+						}
+					}
+					newLine = line.substring(counter);
+					builder.append(newLine);
+					builder.append(System.lineSeparator());
+					counter = 0;
+				} else {
+					builder.append(line);
+					builder.append(System.lineSeparator());
+				}
+			}
+		}
+		scanner.close();
+		area.setText(builder.toString());
+	}
+
+	@FXML
+	public void handleAddLineNumbers() {
+		String line;
+		int n = 1;
+		content = area.getText();
+		Scanner scanner = new Scanner(content);
+		StringBuilder builder = new StringBuilder();
+		while (scanner.hasNextLine()) {
+			line = scanner.nextLine();
+			builder.append(n++ + ") ");
+			builder.append(line);
+			builder.append(System.lineSeparator());
+		}
+		scanner.close();
+		area.setText(builder.toString());
+	}
+	
+	/**
+	 * Util method to build Text Format Options
+	 */
+	public void formatMenuPattern() {
+		Matcher matcher;
+		boolean isMatching;
+		content = area.getText();
+		Scanner scanner = new Scanner(content);
+		StringBuilder builder = new StringBuilder();
+		Pattern pattern = Pattern.compile(regex);
+		while (scanner.hasNextLine()) {
+			String line = scanner.nextLine();
+			matcher = pattern.matcher(line);
+			isMatching = matcher.matches();
+			if (line.equalsIgnoreCase("") || isMatching == true)
+				continue;
+			else {
+				builder.append(line);
+				builder.append(System.lineSeparator());
+			}
+		}
+		scanner.close();
+		area.setText(builder.toString());
+
+	}
+
+	public void SetRegex(String reg) {
+		regex = reg;
+	}
+
+	public void setMainApp(Main mainApp) {
+		this.mainApp = mainApp;
+	}
+
+	public String getText() {
+		return area.getText();
+	}
+
+	public boolean getIsChanged() {
+		return isChanged;
+	}
+	
+	/**
+	 * sets change listener on text area
+	 */
+	public void setListener() {
+		isChanged = false;
+		String oldOne = area.getText();
+		listener = ((observable, oldValue, newValue) -> {
+			isChanged = true;
+			if (newValue.equals(oldOne)) {
+				isChanged = false;
+			}
+//			System.out.println("oldVal: " + oldValue + " ,new: " + newValue
+//					+ "\t" + isChanged);
+		});
+		area.textProperty().addListener(listener);
+	}
+}
