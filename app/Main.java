@@ -47,7 +47,7 @@ public class Main extends Application {
 			mainWindow = primaryStage;
 			mainWindow.setTitle("Simple Text Editor");
 			mainWindow.getIcons().add(
-					new Image("/app/app.sources/images/icon.png"));
+					new Image("/app/view/icon.png"));
 			initRootLayout();
 			setFilePath(null);
 
